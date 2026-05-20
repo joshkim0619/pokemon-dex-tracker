@@ -21,6 +21,9 @@
         .card-pocket.owned { border-style: solid; border-color: #38bdf8; }
         .card-pocket.owned .card-image { filter: grayscale(0%) opacity(100%); transform: scale(1.02); }
         .checkbox-label { margin-top: 12px; cursor: pointer; }
+
+        @media (max-width: 800px) { .binder-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .binder-grid { grid-template-columns: 1fr; } .dashboard-row { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -30,6 +33,7 @@
         <p>An automated layout tracker for Gen 4.</p>
         <div class="dashboard-row">
             <div class="counter-banner">Collected: <span id="collectionCount">0</span> / 107</div>
+            <button onclick="fullSync()" class="clear-btn" style="background-color: #38bdf8; border: 1px solid #0284c7;">Full Sync</button>
             <button onclick="clearAllProgress()" class="clear-btn">Clear Progress</button>
         </div>
     </header>
@@ -99,7 +103,7 @@
 
             const targetImage = document.getElementById(`img-${pkmn.id}`);
 
-            if (cardImageCache[pkmn.id]) {
+            if (cardImageCache[pkmn.id] && cardImageCache[pkmn.id].startsWith("http")) {
                 targetImage.src = cardImageCache[pkmn.id];
             } else if (pkmn.other) {
                 targetImage.src = pkmn.image;
@@ -136,8 +140,14 @@
             updateMetrics();
         }
         function updateMetrics() { document.getElementById('collectionCount').innerText = Object.keys(savedCollection).filter(k => savedCollection[k]).length; }
+        function fullSync() {
+            if (confirm("This will clear all saved card images and re-fetch them from the servers. Proceed?")) {
+                localStorage.removeItem('sinnoh_card_images');
+                location.reload();
+            }
+        }
         function clearAllProgress() {
-            if(confirm("Reset progress?")) {
+            if(confirm("Are you sure you want to reset your entire collection?")) {
                 localStorage.clear();
                 location.reload();
             }
