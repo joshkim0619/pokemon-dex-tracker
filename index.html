@@ -124,24 +124,50 @@
         @media (max-width: 500px) {
             .binder-grid { grid-template-columns: 1fr; }
         }
-        .clear-btn {
-            background-color: #ef4444; /* Crisp warning red */
-            color: #ffffff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
+        /* Container that aligns both blocks seamlessly */
+        .dashboard-row {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px; /* Clean, uniform spacing between the blocks */
+        }
+        
+        /* Base structural rules shared by both elements for perfect mirroring */
+        .counter-banner, .clear-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 44px; /* Explicit matching height barrier */
+            padding: 0 24px; /* Identical internal horizontal breathing room */
+            font-size: 0.95rem;
             font-weight: 600;
-            font-size: 0.9rem;
+            border-radius: 8px; /* Matching smooth corner clipping radius */
+            box-sizing: border-box; /* Forces padding to stay inside the 44px height boundary */
+        }
+        
+        /* Custom coloring unique to the Counter Banner */
+        .counter-banner {
+            background-color: #f3f4f6; /* Soft neutral background */
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+        }
+        
+        /* Custom coloring unique to the Action Button */
+        .clear-btn {
+            background-color: #ef4444; /* Vivid premium warning red */
+            color: #ffffff;
+            border: 1px solid #dc2626;
             cursor: pointer;
             transition: background-color 0.2s ease, transform 0.1s ease;
         }
         
         .clear-btn:hover {
-            background-color: #dc2626; /* Darker red on hover */
+            background-color: #dc2626; /* Darkens smoothly on mouse hover */
         }
         
         .clear-btn:active {
-            transform: scale(0.95); /* Subtle press effect when clicked */
+            transform: scale(0.97); /* Micro physical compression click response */
         }
     </style>
 </head>
