@@ -177,7 +177,7 @@
         {"id": 408, "name": "Cranidos"}, {"id": 409, "name": "Rampardos"}, {"id": 410, "name": "Shieldon"},
         {"id": 411, "name": "Bastiodon"}, {"id": 412, "name": "Burmy"}, {"id": 413, "name": "Wormadam"},
         {"id": 414, "name": "Mothim"}, {"id": 415, "name": "Combee"}, {"id": 416, "name": "Vespiquen"},
-        {"id": 417, "name": "Pachirisu"}, {"id": 418, "name": "Buizel"}, {"id": 419, "name": "Floatzel"},
+        {"id": 417, "name": "Pachirisu"}, {"id": 418, "name": "Buizel"}, {"id": 419, "value": "Floatzel"},
         {"id": 420, "name": "Cherubi"}, {"id": 421, "name": "Cherrim"}, {"id": 422, "name": "Shellos"},
         {"id": 423, "name": "Gastrodon"}, {"id": 424, "name": "Ambipom"}, {"id": 425, "name": "Drifloon"},
         {"id": 426, "name": "Drifblim"}, {"id": 427, "name": "Buneary"}, {"id": 428, "name": "Lopunny"},
@@ -205,7 +205,6 @@
         {"id": 492, "name": "Shaymin"}, {"id": 493, "name": "Arceus"}
     ];
 
-    // 2. Persistent storage caches: one for checklist checks, one for saving found image paths
     let savedCollection = JSON.parse(localStorage.getItem('sinnoh_binder_tracker')) || {};
     let cardImageCache = JSON.parse(localStorage.getItem('sinnoh_card_images')) || {};
     
@@ -219,7 +218,6 @@
         pocket.className = isOwned ? 'card-pocket owned' : 'card-pocket';
         pocket.id = `pocket-${pkmn.id}`;
 
-        // Initial setup image fallback path
         const placeholderImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
 
         pocket.innerHTML = `
@@ -234,33 +232,35 @@
 
         const targetImage = document.getElementById(`img-${pkmn.id}`);
 
-        // THE CACHE CHECK: If we already searched for this card before, load it instantly from memory!
         if (cardImageCache[pkmn.id]) {
             targetImage.src = cardImageCache[pkmn.id];
         } else {
-            // No cache found? Run the API hunt *one time* and save the results permanently
             let apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`;
             
             if (pkmn.set && pkmn.cardNum) {
                 apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=set.id:${pkmn.set} number:${pkmn.cardNum}`;
             } else {
-                apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id} (rarity:"Illustration Rare" OR rarity:"Special Illustration Rare")`;
+                // THE ERA CHASE FILTER:
+                // Scans for modern Illustration Rares, classic Promo releases, Secret Rares, Prime, LV.X, or shiny vault/special arts!
+                apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id} (rarity:"Illustration Rare" OR rarity:"Special Illustration Rare" OR rarity:"Promo" OR rarity:"Rare Secret" OR rarity:"Rare Shiny" OR rarity:"Rare Holo LV.X" OR rarity:"Rare Prime")`;
             }
 
             fetch(apiQueryUrl)
                 .then(res => res.json())
                 .then(data => {
                     if (data.data && data.data.length > 0) {
+                        // The API returns arrays ordered by release date. To get cooler modern/vintage alt sets,
+                        // we prioritize the first hit of our custom rare filter.
                         const imgUrl = data.data[0].images.large;
                         targetImage.src = imgUrl;
-                        // Commit to local database map
                         saveImageToCache(pkmn.id, imgUrl);
                     } else if (!pkmn.set) {
-                        // Regular print fallback route
+                        // absolute baseline fallback if no cool special rarities exist across eras
                         fetch(`https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`)
                             .then(res => res.json())
                             .then(fallbackData => {
                                 if (fallbackData.data && fallbackData.data.length > 0) {
+                                    // Pull the latest core set appearance print
                                     const newestCard = fallbackData.data[fallbackData.data.length - 1];
                                     targetImage.src = newestCard.images.large;
                                     saveImageToCache(pkmn.id, newestCard.images.large);
@@ -268,11 +268,10 @@
                             });
                     }
                 })
-                .catch(err => console.error(`Error sorting art mapping for ID ${pkmn.id}:`, err));
+                .catch(err => console.error(`Error filtering high-rarity layout for ID ${pkmn.id}:`, err));
         }
     });
 
-    // Helper to lock down the fetched URL to local storage memory
     function saveImageToCache(id, url) {
         cardImageCache[id] = url;
         localStorage.setItem('sinnoh_card_images', JSON.stringify(cardImageCache));
@@ -292,19 +291,16 @@
     }
 
     function clearAllProgress() {
-        if (confirm("Are you sure you want to reset your binder? This will uncheck all 107 cards!")) {
+        if (confirm("Are you sure you want to reset your binder? This will uncheck cards and clear image data!")) {
             savedCollection = {};
+            cardImageCache = {};
             localStorage.removeItem('sinnoh_binder_tracker');
+            localStorage.removeItem('sinnoh_card_images');
             container.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = false);
             container.querySelectorAll('.card-pocket').forEach(pocket => pocket.classList.remove('owned'));
             updateMetrics();
+            location.reload(); // Hard reload to force fetch regeneration loops
         }
-    }
-
-    // (Optional utility) In case you ever want to force-wipe the image cache and look for new cards
-    function clearImageCache() {
-        localStorage.removeItem('sinnoh_card_images');
-        location.reload();
     }
 
     function updateMetrics() {
