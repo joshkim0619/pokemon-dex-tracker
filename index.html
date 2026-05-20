@@ -138,11 +138,18 @@
     <div class="binder-grid" id="binderContainer"></div>
 
     <script>
-    // 1. The master dataset containing all 107 unique species mapped out clean
+    // 1. Your complete 107 Sinnoh list. 
     const pokemonData = [
-        {"id": 387, "name": "Turtwig"}, {"id": 388, "name": "Grotle"}, {"id": 389, "name": "Torterra"},
-        {"id": 390, "name": "Chimchar"}, {"id": 391, "name": "Monferno"}, {"id": 392, "name": "Infernape"},
-        {"id": 393, "name": "Piplup"}, {"id": 394, "name": "Prinplup"}, {"id": 395, "name": "Empoleon"},
+        {"id": 387, "name": "Turtwig", "set": "sv06", "cardNum": "013"}, 
+        {"id": 388, "name": "Grotle", "set": "sv06", "cardNum": "014"}, 
+        {"id": 389, "name": "Torterra ex", "set": "sv06", "cardNum": "015"},
+        {"id": 390, "name": "Chimchar", "set": "sv06", "cardNum": "032"}, 
+        {"id": 391, "name": "Monferno", "set": "sv06", "cardNum": "033"}, 
+        {"id": 392, "name": "Infernape", "set": "sv06", "cardNum": "034"},
+        {"id": 393, "name": "Piplup", "set": "sv06", "cardNum": "041"}, 
+        {"id": 394, "name": "Prinplup", "set": "sv06", "cardNum": "042"}, 
+        {"id": 395, "name": "Empoleon", "set": "sv06", "cardNum": "043"},
+        
         {"id": 396, "name": "Starly"}, {"id": 397, "name": "Staravia"}, {"id": 398, "name": "Staraptor"},
         {"id": 399, "name": "Bidoof"}, {"id": 400, "name": "Bibarel"}, {"id": 401, "name": "Kricketot"},
         {"id": 402, "name": "Kricketune"}, {"id": 403, "name": "Shinx"}, {"id": 404, "name": "Luxio"},
@@ -178,15 +185,11 @@
         {"id": 492, "name": "Shaymin"}, {"id": 493, "name": "Arceus"}
     ];
 
-    // Global image template pulling crisp official high-res art assets via Pokedex ID
-    const getArtUrl = (id) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-
-    // 2. Load checked cards from browser's persistent storage cache
+    // 2. Load checked checkboxes out of local storage
     let savedCollection = JSON.parse(localStorage.getItem('sinnoh_binder_tracker')) || {};
-
     const container = document.getElementById('binderContainer');
 
-    // 3. Loop that builds the HTML layout dynamically
+    // 3. Render Loop
     pokemonData.forEach(pkmn => {
         const isOwned = savedCollection[pkmn.id] === true;
 
@@ -194,9 +197,15 @@
         pocket.className = isOwned ? 'card-pocket owned' : 'card-pocket';
         pocket.id = `pocket-${pkmn.id}`;
 
+        // Fallback to sprite art if set mapping hasn't been defined yet
+        let cardImageUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
+        if (pkmn.set && pkmn.cardNum) {
+            cardImageUrl = `https://assets.tcgdex.net/en/${pkmn.set}/${pkmn.cardNum}/high.webp`;
+        }
+
         pocket.innerHTML = `
             <div class="card-info">#${pkmn.id} - ${pkmn.name}</div>
-            <img src="${getArtUrl(pkmn.id)}" alt="${pkmn.name}" class="card-image" loading="lazy">
+            <img src="${cardImageUrl}" alt="${pkmn.name}" class="card-image" loading="lazy">
             <label class="checkbox-label">
                 <input type="checkbox" ${isOwned ? 'checked' : ''} onchange="toggleCard(${pkmn.id}, this)">
                 Owned
@@ -205,7 +214,7 @@
         container.appendChild(pocket);
     });
 
-    // 4. Upgraded function that saves data permanently into cache on click
+    // 4. Toggle single card status
     function toggleCard(id, checkbox) {
         const pocketElement = document.getElementById(`pocket-${id}`);
         
@@ -217,18 +226,41 @@
             delete savedCollection[id];
         }
         
-        // Push string text representation of object state to localStorage cache line
         localStorage.setItem('sinnoh_binder_tracker', JSON.stringify(savedCollection));
         updateMetrics();
     }
 
-    // 5. Live indicator calculator update handling
+    // 5. NEW: The Clear All Progress Function
+    function clearAllProgress() {
+        // Ask for verification so clicks don't destroy data by mistake
+        const confirmClear = confirm("Are you sure you want to reset your binder? This will uncheck all 107 cards!");
+        
+        if (confirmClear) {
+            // Empty out our local data object
+            savedCollection = {};
+            
+            // Delete the storage slot from the browser cache
+            localStorage.removeItem('sinnoh_binder_tracker');
+            
+            // Find every checkbox in the binder and uncheck it
+            const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(box => box.checked = false);
+            
+            // Find every pocket container and strip out the 'owned' full-color style
+            const pockets = container.querySelectorAll('.card-pocket');
+            pockets.forEach(pocket => pocket.classList.remove('owned'));
+            
+            // Recalculate counter back down to zero
+            updateMetrics();
+        }
+    }
+
+    // 6. Update counter indicator
     function updateMetrics() {
         const count = Object.keys(savedCollection).length;
         document.getElementById('collectionCount').innerText = count;
     }
 
-    // Run verification updates immediately on setup compilation routines
     updateMetrics();
 </script>
 </body>
