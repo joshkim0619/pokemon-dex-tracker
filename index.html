@@ -129,7 +129,7 @@
             margin-bottom: 12px;
         }
 
-        /* Simplified Clean Owned Button */
+        /* Simplified Clean Owned Button Style preserved */
         .owned-btn {
             width: 100%;
             background-color: #0f172a;
@@ -149,7 +149,7 @@
             border-color: #475569;
         }
 
-        /* Active Owned Button State */
+        /* Active State with beautiful shadow emission glowing style */
         .owned-btn.active {
             background-color: #10b981; /* Solid Emerald Green */
             color: #ffffff;
@@ -264,7 +264,7 @@
             <div class="card-info">#${pkmn.id} - ${pkmn.name}</div>
             <img src="${defaultMediaArt}" alt="${pkmn.name}" class="card-image" id="img-${pkmn.id}" loading="lazy">
             <button onclick="toggleOwned(${pkmn.id})" id="btn-${pkmn.id}" class="owned-btn ${isOwned ? 'active' : ''}">
-                ${isOwned ? 'Owned' : 'Mark Owned'}
+                Owned
             </button>
         `;
         container.appendChild(pocket);
@@ -274,7 +274,6 @@
         if (cardImageCache[pkmn.id]) {
             targetImage.src = cardImageCache[pkmn.id];
         } else {
-            // Straightforward, single-language check to TCGdex API
             fetch(`https://api.tcgdex.net/v2/en/pokemon/${pkmn.name.toLowerCase()}`)
                 .then(res => res.json())
                 .then(engData => {
@@ -302,11 +301,9 @@
 
         if (savedCollection[id]) {
             btn.classList.add('active');
-            btn.innerText = 'Owned';
             pocketElement.classList.add('owned');
         } else {
             btn.classList.remove('active');
-            btn.innerText = 'Mark Owned';
             pocketElement.classList.remove('owned');
         }
 
@@ -321,7 +318,6 @@
             
             container.querySelectorAll('.owned-btn').forEach(btn => {
                 btn.classList.remove('active');
-                btn.innerText = 'Mark Owned';
             });
             container.querySelectorAll('.card-pocket').forEach(pocket => pocket.classList.remove('owned'));
             updateMetrics();
