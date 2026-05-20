@@ -34,15 +34,51 @@
             font-size: 1.05rem;
             line-height: 1.5;
         }
+        
+        /* Container that aligns both blocks seamlessly */
+        .dashboard-row {
+            margin-top: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px; /* Clean, uniform spacing between blocks */
+        }
+        
+        /* Base structural rules shared by both elements for perfect sizing */
+        .counter-banner, .clear-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 44px; /* Explicit matching height barrier */
+            padding: 0 24px; /* Identical internal horizontal padding */
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px; /* Matching smooth corner clipping radius */
+            box-sizing: border-box; /* Forces padding inside the height boundary */
+        }
+        
+        /* Custom coloring unique to the Counter Banner */
         .counter-banner {
             background-color: #1e293b;
-            border: 1px solid #334155;
-            padding: 10px 20px;
-            border-radius: 30px;
-            margin-top: 15px;
-            display: inline-block;
-            font-weight: 600;
             color: #38bdf8;
+            border: 1px solid #334155;
+        }
+        
+        /* Custom coloring unique to the Action Button */
+        .clear-btn {
+            background-color: #ef4444; /* Vivid warning red */
+            color: #ffffff;
+            border: 1px solid #dc2626;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        
+        .clear-btn:hover {
+            background-color: #dc2626; /* Darkens smoothly on hover */
+        }
+        
+        .clear-btn:active {
+            transform: scale(0.97); /* Physical compression click response */
         }
         
         /* 3x3 Binder Layout Sheet */
@@ -123,75 +159,32 @@
         }
         @media (max-width: 500px) {
             .binder-grid { grid-template-columns: 1fr; }
-        }
-        /* Container that aligns both blocks seamlessly */
-        .dashboard-row {
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px; /* Clean, uniform spacing between the blocks */
-        }
-        
-        /* Base structural rules shared by both elements for perfect mirroring */
-        .counter-banner, .clear-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            height: 44px; /* Explicit matching height barrier */
-            padding: 0 24px; /* Identical internal horizontal breathing room */
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: 8px; /* Matching smooth corner clipping radius */
-            box-sizing: border-box; /* Forces padding to stay inside the 44px height boundary */
-        }
-        
-        /* Custom coloring unique to the Counter Banner */
-        .counter-banner {
-            background-color: #f3f4f6; /* Soft neutral background */
-            color: #1f2937;
-            border: 1px solid #e5e7eb;
-        }
-        
-        /* Custom coloring unique to the Action Button */
-        .clear-btn {
-            background-color: #ef4444; /* Vivid premium warning red */
-            color: #ffffff;
-            border: 1px solid #dc2626;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-        }
-        
-        .clear-btn:hover {
-            background-color: #dc2626; /* Darkens smoothly on mouse hover */
-        }
-        
-        .clear-btn:active {
-            transform: scale(0.97); /* Micro physical compression click response */
+            .dashboard-row { flex-direction: column; width: 100%; }
+            .counter-banner, .clear-btn { width: 100%; max-width: 300px; }
         }
     </style>
 </head>
 <body>
 
     <header>
-    <h1>Sinnoh Master Binder</h1>
-    <p class="subtitle">An automated layout tracker managing all 107 native Generation 4 species.</p>
-    
-    <!-- Unified Dashboard Row -->
-    <div class="dashboard-row">
-        <div class="counter-banner">
-            Collected: <span id="collectionCount">0</span> / 107
+        <h1>Sinnoh Master Binder</h1>
+        <p class="subtitle">An automated layout tracker managing all 107 native Generation 4 species.</p>
+        
+        <!-- Unified Dashboard Row -->
+        <div class="dashboard-row">
+            <div class="counter-banner">
+                Collected: <span id="collectionCount">0</span> / 107
+            </div>
+            <button onclick="clearAllProgress()" class="clear-btn">
+                Clear Progress
+            </button>
         </div>
-        <button onclick="clearAllProgress()" class="clear-btn">
-            Clear Progress
-        </button>
-    </div>
     </header>
 
     <!-- The target wrapper for the loop output -->
     <div class="binder-grid" id="binderContainer"></div>
 
-   <script>
+    <script>
     // 1. Master Sinnoh list
     const pokemonData = [
         {"id": 387, "name": "Turtwig", "set": "mep", "cardNum": "040"}, 
@@ -268,8 +261,6 @@
             if (pkmn.set && pkmn.cardNum) {
                 apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=set.id:${pkmn.set} number:${pkmn.cardNum}`;
             } else {
-                // THE ERA CHASE FILTER:
-                // Scans for modern Illustration Rares, classic Promo releases, Secret Rares, Prime, LV.X, or shiny vault/special arts!
                 apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id} (rarity:"Illustration Rare" OR rarity:"Special Illustration Rare" OR rarity:"Promo" OR rarity:"Rare Secret" OR rarity:"Rare Shiny" OR rarity:"Rare Holo LV.X" OR rarity:"Rare Prime")`;
             }
 
@@ -277,18 +268,14 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.data && data.data.length > 0) {
-                        // The API returns arrays ordered by release date. To get cooler modern/vintage alt sets,
-                        // we prioritize the first hit of our custom rare filter.
                         const imgUrl = data.data[0].images.large;
                         targetImage.src = imgUrl;
                         saveImageToCache(pkmn.id, imgUrl);
                     } else if (!pkmn.set) {
-                        // absolute baseline fallback if no cool special rarities exist across eras
                         fetch(`https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`)
                             .then(res => res.json())
                             .then(fallbackData => {
                                 if (fallbackData.data && fallbackData.data.length > 0) {
-                                    // Pull the latest core set appearance print
                                     const newestCard = fallbackData.data[fallbackData.data.length - 1];
                                     targetImage.src = newestCard.images.large;
                                     saveImageToCache(pkmn.id, newestCard.images.large);
@@ -306,7 +293,7 @@
     }
 
     function toggleCard(id, checkbox) {
-        const pocketElement = document.getElementById(`pocket-${id}`);
+        const pocketElement = document.getElementById('pocket-' + id);
         if (checkbox.checked) {
             pocketElement.classList.add('owned');
             savedCollection[id] = true;
@@ -327,7 +314,7 @@
             container.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = false);
             container.querySelectorAll('.card-pocket').forEach(pocket => pocket.classList.remove('owned'));
             updateMetrics();
-            location.reload(); // Hard reload to force fetch regeneration loops
+            location.reload();
         }
     }
 
