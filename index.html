@@ -3,83 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokedex Tracker</title>
+    <title>My Pokémon Binder Tracker</title>
     <style>
-        /* Modern Reset & Typography */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            background-color: #f8fafc;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #1e293b; /* Dark backdrop */
+            color: #f8fafc;
             padding: 40px 20px;
-            <!-- This links directly to the external card image URL -->
-                <img src="https://pkmncards.com/wp-content/uploads/mebsp_en_040_std.jpg" 
-                 alt="Pokémon Card Promo" 
-                 class="card-promo">
-        .card-promo {
-                        display: block;        /* Centers the image layout and prevents text crowding */
-                        max-width: 100%;       /* Prevents the image from spilling off smaller phone screens */
-                        width: 320px;          /* Sets a realistic desktop viewing width for a trading card */
-                        height: auto;          /* Maintains the card's original vertical proportions */
-                        margin: 20px auto;     /* Centers the card horizontally with space above and below */
-                        border-radius: 14px;   /* Gives the card clean, slightly rounded corners matching real card cuts */
-                        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Adds a subtle drop shadow to make the card pop */
-                    }
-        
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        /* Container Layout */
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        /* 3x3 Binder Layout Sheet */
+        .binder-page {
+            background-color: #0f172a; /* Outer binder sleeve shadow block */
+            border: 10px solid #334155; 
+            border-radius: 16px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Creates exact 3x3 layout structural grid */
+            gap: 15px;
+            max-width: 850px;
+            width: 100%;
         }
 
-        /* Headings & Text Styling */
-        h1 {
-            color: #1e3a8a; /* Deep Slate Blue */
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 10px;
-        }
-        p {
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-            color: #4b5563;
+        /* Individual Card Pockets */
+        .card-pocket {
+            background-color: #1e293b;
+            border: 2px dashed #475569;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
         }
 
-        /* Interactive Elements (Buttons) */
-        .btn {
-            display: inline-block;
-            background-color: #2563eb;
-            color: #ffffff;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            transition: background-color 0.2s ease;
+        /* The Card Image Filter Rules */
+        .card-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            filter: grayscale(100%) opacity(25%); /* Completely faded out and grey if missing */
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .btn:hover {
-            background-color: #1d4ed8;
+
+        /* Active "Owned" Styling States */
+        .card-pocket.owned {
+            border-style: solid;
+            border-color: #38bdf8; /* Vibrant light-blue highlight ring */
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+        }
+
+        .card-pocket.owned .card-image {
+            filter: grayscale(0%) opacity(100%); /* Returns to spectacular full color display */
+            transform: scale(1.03); /* Pops forward slightly */
+        }
+
+        .checkbox-label {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Welcome to My Project Space</h1>
-        <p>This page is hosted completely free on GitHub Pages. By adding a clean layout, a modern font stack, subtle shadows, and intentional padding, we can make any basic HTML layout look incredibly sharp.</p>
-        <a href="#" class="btn">Explore My Tracker</a>
+    <h1>3x3 Binder View</h1>
+    <p style="margin-bottom: 25px; color: #94a3b8;">Check the boxes to slide the promos inside your binder pockets.</p>
+
+    <div class="binder-page">
+        <!-- Pocket Slot 1 -->
+        <div class="card-pocket" id="pocket1">
+            <img src="https://pkmncards.com/wp-content/uploads/mebsp_en_040_std.jpg" alt="Promo Card" class="card-image">
+            <label class="checkbox-label">
+                <input type="checkbox" onchange="updatePocket('pocket1', this)"> Owned
+            </label>
+        </div>
+
+        <!-- Pocket Slot 2 -->
+        <div class="card-pocket" id="pocket2">
+            <img src="https://pkmncards.com/wp-content/uploads/mebsp_en_040_std.jpg" alt="Promo Card" class="card-image">
+            <label class="checkbox-label">
+                <input type="checkbox" onchange="updatePocket('pocket2', this)"> Owned
+            </label>
+        </div>
+
+        <!-- Pocket Slot 3 -->
+        <div class="card-pocket" id="pocket3">
+            <img src="https://pkmncards.com/wp-content/uploads/mebsp_en_040_std.jpg" alt="Promo Card" class="card-image">
+            <label class="checkbox-label">
+                <input type="checkbox" onchange="updatePocket('pocket3', this)"> Owned
+            </label>
+        </div>
+
+        <!-- Repeat this block for pockets 4 through 9 inside your binder page grid -->
     </div>
+
+    <!-- JavaScript function to manipulate the display states seamlessly -->
+    <script>
+        function updatePocket(pocketId, checkbox) {
+            const pocket = document.getElementById(pocketId);
+            if (checkbox.checked) {
+                pocket.classList.add('owned');
+            } else {
+                pocket.classList.remove('owned');
+            }
+        }
+    </script>
 
 </body>
 </html>
