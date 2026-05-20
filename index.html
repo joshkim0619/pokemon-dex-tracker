@@ -62,6 +62,12 @@
             background-color: #1e293b;
             color: #38bdf8;
             border: 1px solid #334155;
+            gap: 15px;
+        }
+
+        .counter-banner span {
+            color: #fff;
+            font-weight: normal;
         }
         
         /* Custom coloring unique to the Action Button */
@@ -120,26 +126,51 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
             filter: grayscale(100%) opacity(20%); /* Faded until collected */
             transition: all 0.35s ease;
+            margin-bottom: 12px;
         }
 
-        .checkbox-label {
-            margin-top: 12px;
+        /* Language Toggle Button Containers */
+        .lang-group {
             display: flex;
-            align-items: center;
             gap: 8px;
-            font-size: 0.95rem;
-            color: #cbd5e1;
+            width: 100%;
+        }
+
+        .lang-btn {
+            flex: 1;
+            background-color: #0f172a;
+            color: #64748b;
+            border: 1px solid #334155;
+            padding: 6px 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
             cursor: pointer;
             user-select: none;
-        }
-        .checkbox-label input {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #38bdf8;
+            transition: all 0.2s ease;
         }
 
-        /* Active states */
+        .lang-btn:hover {
+            color: #f8fafc;
+            border-color: #475569;
+        }
+
+        /* Active Selected Button States */
+        .lang-btn.active-eng {
+            background-color: #10b981; /* Solid Emerald Green */
+            color: #ffffff;
+            border-color: #059669;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        .lang-btn.active-jpn {
+            background-color: #10b981; /* Solid Emerald Green */
+            color: #ffffff;
+            border-color: #059669;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Active Pocket states */
         .card-pocket.owned {
             border-style: solid;
             border-color: #38bdf8;
@@ -173,7 +204,9 @@
         <!-- Unified Dashboard Row -->
         <div class="dashboard-row">
             <div class="counter-banner">
-                Collected: <span id="collectionCount">0</span> / 107
+                <div>ENG: <span id="engCount">0</span>/107</div>
+                <div>|</div>
+                <div>JPN: <span id="jpnCount">0</span>/107</div>
             </div>
             <button onclick="clearAllProgress()" class="clear-btn">
                 Clear Progress
@@ -187,7 +220,7 @@
     <script>
     // 1. Master Sinnoh list
     const pokemonData = [
-        {"id": 387, "name": "Turtwig"},, 
+        {"id": 387, "name": "Turtwig"}, 
         {"id": 388, "name": "Grotle"}, {"id": 389, "name": "Torterra"},
         {"id": 390, "name": "Chimchar"}, {"id": 391, "name": "Monferno"}, {"id": 392, "name": "Infernape"},
         {"id": 393, "name": "Piplup"}, {"id": 394, "name": "Prinplup"}, {"id": 395, "name": "Empoleon"},
@@ -226,14 +259,21 @@
         {"id": 492, "name": "Shaymin"}, {"id": 493, "name": "Arceus"}
     ];
 
-    let savedCollection = JSON.parse(localStorage.getItem('sinnoh_binder_tracker')) || {};
+    // Storage architecture: savedCollection now retains language maps { 387: { eng: true, jpn: false } }
+    let savedCollection = JSON.parse(localStorage.getItem('sinnoh_binder_lang_tracker')) || {};
     let cardImageCache = JSON.parse(localStorage.getItem('sinnoh_card_images')) || {};
     
     const container = document.getElementById('binderContainer');
     container.innerHTML = '';
 
     pokemonData.forEach(pkmn => {
-        const isOwned = savedCollection[pkmn.id] === true;
+        // Fallback layout protection for missing entries
+        if (!savedCollection[pkmn.id]) {
+            savedCollection[pkmn.id] = { eng: false, jpn: false };
+        }
+
+        const status = savedCollection[pkmn.id];
+        const isOwned = status.eng || status.jpn;
 
         const pocket = document.createElement('div');
         pocket.className = isOwned ? 'card-pocket owned' : 'card-pocket';
@@ -244,10 +284,10 @@
         pocket.innerHTML = `
             <div class="card-info">#${pkmn.id} - ${pkmn.name}</div>
             <img src="${placeholderImg}" alt="${pkmn.name}" class="card-image" id="img-${pkmn.id}" loading="lazy">
-            <label class="checkbox-label">
-                <input type="checkbox" ${isOwned ? 'checked' : ''} onchange="toggleCard(${pkmn.id}, this)">
-                Owned
-            </label>
+            <div class="lang-group">
+                <button onclick="toggleLanguage(${pkmn.id}, 'eng')" id="btn-eng-${pkmn.id}" class="lang-btn ${status.eng ? 'active-eng' : ''}">ENG</button>
+                <button onclick="toggleLanguage(${pkmn.id}, 'jpn')" id="btn-jpn-${pkmn.id}" class="lang-btn ${status.jpn ? 'active-jpn' : ''}">JPN</button>
+            </div>
         `;
         container.appendChild(pocket);
 
@@ -256,13 +296,7 @@
         if (cardImageCache[pkmn.id]) {
             targetImage.src = cardImageCache[pkmn.id];
         } else {
-            let apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`;
-            
-            if (pkmn.set && pkmn.cardNum) {
-                apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=set.id:${pkmn.set} number:${pkmn.cardNum}`;
-            } else {
-                apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id} (rarity:"Illustration Rare" OR rarity:"Special Illustration Rare" OR rarity:"Promo" OR rarity:"Rare Secret" OR rarity:"Rare Shiny" OR rarity:"Rare Holo LV.X" OR rarity:"Rare Prime")`;
-            }
+            let apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id} (rarity:"Illustration Rare" OR rarity:"Special Illustration Rare" OR rarity:"Promo" OR rarity:"Rare Secret" OR rarity:"Rare Shiny" OR rarity:"Rare Holo LV.X" OR rarity:"Rare Prime")`;
 
             fetch(apiQueryUrl)
                 .then(res => res.json())
@@ -271,7 +305,7 @@
                         const imgUrl = data.data[0].images.large;
                         targetImage.src = imgUrl;
                         saveImageToCache(pkmn.id, imgUrl);
-                    } else if (!pkmn.set) {
+                    } else {
                         fetch(`https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`)
                             .then(res => res.json())
                             .then(fallbackData => {
@@ -292,16 +326,28 @@
         localStorage.setItem('sinnoh_card_images', JSON.stringify(cardImageCache));
     }
 
-    function toggleCard(id, checkbox) {
-        const pocketElement = document.getElementById('pocket-' + id);
-        if (checkbox.checked) {
+    function toggleLanguage(id, lang) {
+        const pocketElement = document.getElementById(`pocket-${id}`);
+        const btn = document.getElementById(`btn-${lang}-${id}`);
+        
+        // Toggle the true/false value
+        savedCollection[id][lang] = !savedCollection[id][lang];
+        
+        // Update button active style classes
+        if (savedCollection[id][lang]) {
+            btn.classList.add(`active-${lang}`);
+        } else {
+            btn.classList.remove(`active-${lang}`);
+        }
+
+        // Update overall card card slot highlights based on ownership logic
+        if (savedCollection[id].eng || savedCollection[id].jpn) {
             pocketElement.classList.add('owned');
-            savedCollection[id] = true;
         } else {
             pocketElement.classList.remove('owned');
-            delete savedCollection[id];
         }
-        localStorage.setItem('sinnoh_binder_tracker', JSON.stringify(savedCollection));
+
+        localStorage.setItem('sinnoh_binder_lang_tracker', JSON.stringify(savedCollection));
         updateMetrics();
     }
 
@@ -309,9 +355,13 @@
         if (confirm("Are you sure you want to reset your binder? This will uncheck cards and clear image data!")) {
             savedCollection = {};
             cardImageCache = {};
-            localStorage.removeItem('sinnoh_binder_tracker');
+            localStorage.removeItem('sinnoh_binder_lang_tracker');
             localStorage.removeItem('sinnoh_card_images');
-            container.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = false);
+            
+            // Clean up button active styling states on screen
+            container.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active-eng', 'active-jpn');
+            });
             container.querySelectorAll('.card-pocket').forEach(pocket => pocket.classList.remove('owned'));
             updateMetrics();
             location.reload();
@@ -319,7 +369,16 @@
     }
 
     function updateMetrics() {
-        document.getElementById('collectionCount').innerText = Object.keys(savedCollection).length;
+        let engTotal = 0;
+        let jpnTotal = 0;
+
+        Object.keys(savedCollection).forEach(key => {
+            if (savedCollection[key].eng) engTotal++;
+            if (savedCollection[key].jpn) jpnTotal++;
+        });
+
+        document.getElementById('engCount').innerText = engTotal;
+        document.getElementById('jpnCount').innerText = jpnTotal;
     }
     updateMetrics();
 </script>
