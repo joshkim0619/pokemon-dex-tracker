@@ -164,9 +164,11 @@
     <div class="binder-grid" id="binderContainer"></div>
 
    <script>
-    // 1. Your clean, effortless list of 107 Sinnoh entries
+    // 1. Master Sinnoh list
+    // You can hardcode exact card overrides like Turtwig MEP 040 right here!
     const pokemonData = [
-        {"id": 387, "name": "Turtwig"}, {"id": 388, "name": "Grotle"}, {"id": 389, "name": "Torterra"},
+        {"id": 387, "name": "Turtwig", "set": "mep", "cardNum": "040"}, 
+        {"id": 388, "name": "Grotle"}, {"id": 389, "name": "Torterra"},
         {"id": 390, "name": "Chimchar"}, {"id": 391, "name": "Monferno"}, {"id": 392, "name": "Infernape"},
         {"id": 393, "name": "Piplup"}, {"id": 394, "name": "Prinplup"}, {"id": 395, "name": "Empoleon"},
         {"id": 396, "name": "Starly"}, {"id": 397, "name": "Staravia"}, {"id": 398, "name": "Staraptor"},
@@ -206,11 +208,8 @@
 
     let savedCollection = JSON.parse(localStorage.getItem('sinnoh_binder_tracker')) || {};
     const container = document.getElementById('binderContainer');
-
-    // 2. Clear out container completely before rendering to prevent duplicates
     container.innerHTML = '';
 
-    // 3. Dynamic Automated Image Fetcher Loop
     pokemonData.forEach(pkmn => {
         const isOwned = savedCollection[pkmn.id] === true;
 
@@ -218,17 +217,12 @@
         pocket.className = isOwned ? 'card-pocket owned' : 'card-pocket';
         pocket.id = `pocket-${pkmn.id}`;
 
-        // AUTOMATED RESOLUTION: This endpoint automatically maps the card text, full frame artwork windows, 
-        // and modern layouts straight via the exact Pokédex ID. No manual set values needed!
-        const cardImageUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`;
-        
-        // Let's tap into the crisp, lightning-fast open database directly to keep load times instant:
-        const cleanCardArt = `https://images.pokemontcg.io/sv4pt5/${pkmn.id - 240}.png`; 
+        // Standardized placeholder asset sheet layout while background api works
+        const placeholderImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
 
-        // Let's utilize a foolproof open-source repository that references the global card image maps cleanly:
         pocket.innerHTML = `
             <div class="card-info">#${pkmn.id} - ${pkmn.name}</div>
-            <img src="https://assets.tcgdex.net/en/unreleased/ex1/high.webp" alt="${pkmn.name}" class="card-image" id="img-${pkmn.id}" loading="lazy">
+            <img src="${placeholderImg}" alt="${pkmn.name}" class="card-image" id="img-${pkmn.id}" loading="lazy">
             <label class="checkbox-label">
                 <input type="checkbox" ${isOwned ? 'checked' : ''} onchange="toggleCard(${pkmn.id}, this)">
                 Owned
@@ -236,16 +230,41 @@
         `;
         container.appendChild(pocket);
 
-        // Fetch the genuine modern card print live from the official API server index without relying on manual formulas!
-        fetch(`https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}&pageSize=1`)
+        // ART-HUNTER QUERY ARCHITECTURE:
+        // First checks if you forced a hardcoded override. Otherwise, queries the database
+        // specifically searching for Illustration Rares or Special Illustration Rares first!
+        let apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`;
+        
+        if (pkmn.set && pkmn.cardNum) {
+            apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=set.id:${pkmn.set} number:${pkmn.cardNum}`;
+        } else {
+            // Searches for the national Pokedex ID AND looks for an Illustration Rare variant text flag
+            apiQueryUrl = `https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id} (rarity:"Illustration Rare" OR rarity:"Special Illustration Rare")`;
+        }
+
+        fetch(apiQueryUrl)
             .then(res => res.json())
             .then(data => {
-                if(data.data && data.data.length > 0) {
-                    // Instantly update the card placeholder src to the high resolution modern print file!
-                    document.getElementById(`img-${pkmn.id}`).src = data.data[0].images.large;
+                const targetImage = document.getElementById(`img-${pkmn.id}`);
+                
+                if (data.data && data.data.length > 0) {
+                    // Perfect! Found an Illustration Rare print.
+                    targetImage.src = data.data[0].images.large;
+                } else if (!pkmn.set) {
+                    // Fallback Routine: If no Illustration variant exists for this specific Sinnoh species,
+                    // run a second rapid request to fetch its absolute latest standard print variant card layout.
+                    fetch(`https://api.pokemontcg.io/v2/cards?q=nationalPokedexNumbers:${pkmn.id}`)
+                        .then(res => res.json())
+                        .then(fallbackData => {
+                            if (fallbackData.data && fallbackData.data.length > 0) {
+                                // Find the newest modern card layout available by picking the last entry in array
+                                const newestCard = fallbackData.data[fallbackData.data.length - 1];
+                                targetImage.src = newestCard.images.large;
+                            }
+                        });
                 }
             })
-            .catch(err => console.error("Error loading card asset:", err));
+            .catch(err => console.error(`Error sorting art mapping for ID ${pkmn.id}:`, err));
     });
 
     function toggleCard(id, checkbox) {
