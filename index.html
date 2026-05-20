@@ -17,6 +17,20 @@
             color: #333333;
             background-color: #f8fafc;
             padding: 40px 20px;
+            <!-- This links directly to the external card image URL -->
+                <img src="https://pkmncards.com/wp-content/uploads/mebsp_en_040_std.jpg" 
+                 alt="Pokémon Card Promo" 
+                 class="card-promo">
+        .card-promo {
+                        display: block;        /* Centers the image layout and prevents text crowding */
+                        max-width: 100%;       /* Prevents the image from spilling off smaller phone screens */
+                        width: 320px;          /* Sets a realistic desktop viewing width for a trading card */
+                        height: auto;          /* Maintains the card's original vertical proportions */
+                        margin: 20px auto;     /* Centers the card horizontally with space above and below */
+                        border-radius: 14px;   /* Gives the card clean, slightly rounded corners matching real card cuts */
+                        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Adds a subtle drop shadow to make the card pop */
+                    }
+        
         }
 
         /* Container Layout */
