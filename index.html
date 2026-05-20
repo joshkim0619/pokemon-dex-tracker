@@ -192,6 +192,9 @@
     <div class="binder-grid" id="binderContainer"></div>
 
     <script>
+    // FRESH KEY: Using an completely unique name to protect from legacy data corruption
+    const storageKey = 'sinnoh_tracker_v3_clean';
+
     const pokemonData = [
         {"id": 387, "name": "Turtwig"}, 
         {"id": 388, "name": "Grotle"}, {"id": 389, "name": "Torterra"},
@@ -232,7 +235,14 @@
         {"id": 492, "name": "Shaymin"}, {"id": 493, "name": "Arceus"}
     ];
 
-    let savedCollection = JSON.parse(localStorage.getItem('original_sinnoh_tracker')) || {};
+    let savedCollection = {};
+    try {
+        const rawData = localStorage.getItem(storageKey);
+        if (rawData) savedCollection = JSON.parse(rawData);
+    } catch (e) {
+        console.error("Local storage was reset due to unexpected historical format issues.", e);
+        savedCollection = {};
+    }
     
     const container = document.getElementById('binderContainer');
     container.innerHTML = '';
@@ -274,14 +284,14 @@
             pocketElement.classList.remove('owned');
         }
 
-        localStorage.setItem('original_sinnoh_tracker', JSON.stringify(savedCollection));
+        localStorage.setItem(storageKey, JSON.stringify(savedCollection));
         updateMetrics();
     }
 
     function clearAllProgress() {
         if (confirm("Are you sure you want to reset your binder progress?")) {
             savedCollection = {};
-            localStorage.removeItem('original_sinnoh_tracker');
+            localStorage.removeItem(storageKey);
             
             container.querySelectorAll('.owned-btn').forEach(btn => {
                 btn.classList.remove('active');
